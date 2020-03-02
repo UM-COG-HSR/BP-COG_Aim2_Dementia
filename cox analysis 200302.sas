@@ -50,7 +50,7 @@ options fmtsearch=(fmts);
 
 /* NOTE: For this program to run, any categorical variables must be stored as either numeric variables with associated formats or character variables*/
 
-%let SAS_work_dir = dem;
+%let data_dir = dem;
 %let analyticfile = coxreg4;
 %let OutputPath = S:\Intmed_Rsrch2\GenMed\Restricted\BP COG\Aim 2\Dementia Model\Output;
 %let filedesc = meangcp_educ;
@@ -77,7 +77,7 @@ end;
 drop i;
 run;
 
-proc contents data=&SAS_work_dir..&analyticfile noprint out=contents (keep=NAME TYPE FORMAT); run;
+proc contents data=&data_dir..&analyticfile noprint out=contents (keep=NAME TYPE FORMAT); run;
 
 data varfmts;
 set contents;
@@ -128,7 +128,7 @@ call symputx ("typlist",typlist);
 call symputx ("fmtlist",fmtlist);
 run;
 
-proc means data=&SAS_work_dir..&analyticfile median;
+proc means data=&data_dir..&analyticfile median;
 var &numlist;
 where t_start=0;
 ods output summary=medians;
@@ -206,7 +206,7 @@ run;
 
 ods graphics on;
 *ods rtf file="&OutputPath.\Cox_&y2.&m2.&d2._&filedesc";
-proc phreg data=&SAS_work_dir..&analyticfile plots(overlay)=(survival);
+proc phreg data=&data_dir..&analyticfile plots(overlay)=(survival);
 %do i = 1 %to &ncats;
 	%let tcat = %scan(&catlist,&i);
 	class &tcat (ref="&&&tcat._ref");
