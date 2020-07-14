@@ -7,9 +7,9 @@
 * Revisions: xxxxx xxx xxxx xxxxxxxxxxxx       *
 ***********************************************/
 /* Please provide info about this repository */
-%let repo_name =SAS-project-template; /* Repository name on GitHub */
-%let repo_maintainer = !!!Insert-name;
-%let repo_description = !!!One line description. Do NOT use special characters;
+%let repo_name = BP-COG_Aim2_Dementia; /* Repository name on GitHub */
+%let repo_maintainer = Nick Tilton;
+%let repo_description = Produce survival function for a set of baseline covariates and randomly selected test cases;
 
 %put repo_name := &repo_name;  /* Github Repository name */
 
