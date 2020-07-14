@@ -1,0 +1,323 @@
+1                                         The SAS System              09:31 Tuesday, July 14, 2020
+
+NOTE: Copyright (c) 2002-2012 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M4) 
+      Licensed to UNIVERSITY OF MICHIGAN - T&R - SFA, Site 70082420.
+NOTE: This session is executing on the X64_10PRO  platform.
+
+
+
+NOTE: Updated analytical products:
+      
+      SAS/STAT 14.2
+      SAS/ETS 14.2
+      SAS/OR 14.2
+      SAS/IML 14.2
+      SAS/QC 14.2
+
+NOTE: Additional host information:
+
+ X64_10PRO WIN 10.0.17763  Workstation
+
+NOTE: SAS initialization used:
+      real time           17.36 seconds
+      cpu time            0.37 seconds
+      
+1          /***********************************************
+2          * Program: xxxxxx.SAS                          *
+3          * Folder: x:\xxxx\xxxxxx\xxxxx                 *
+4          * Author: xxxxxxx                              *
+5          * Created: xx/xx/xx                            *
+6          * Summary: xxxxxx xxx xxxxx xxxxxxxxxxx xxx    *
+7          * Revisions: xxxxx xxx xxxx xxxxxxxxxxxx       *
+8          ***********************************************/
+9          /* Please provide info about this repository */
+10         %let repo_name = BP-COG_Aim2_Dementia; /* Repository name on GitHub */
+11         %let repo_maintainer = Nick Tilton;
+12         %let repo_description = Produce survival function for a set of baseline covariates and
+12       ! randomly selected test cases;
+13         
+14         %put repo_name := &repo_name;  /* Github Repository name */
+repo_name := BP-COG_Aim2_Dementia
+15         
+16         /*****---- SAS Setup starts here -----*****/
+17         
+18         /* Define global macro variable names */
+19         %global
+20          SAS_work_dir
+21          computer_name
+22          sas_batchmode   /* Y/N */
+23          sas_progname
+24          sas_fullname
+25         ;
+26         
+27         /* Store path to SAS working directory in `SAS_work_dir` macro variable */
+28         /* Based on
+2                                         The SAS System              09:31 Tuesday, July 14, 2020
+
+28       ! `https://communities.sas.com/t5/SAS-Communities-Library/Find-current-directory-path/ta-
+28       ! p/485785` */
+29         /* Note the location of the file*/
+30         filename setupc  "C:/Users/Public/SAS_work_directory.sas";
+31         %include setupc;
+72         %let SAS_work_dir =  %SAS_work_directory;
+73         %put SAS_work_dir := &SAS_work_dir;
+SAS_work_dir := S:\Intmed_Rsrch2\GenMed\Restricted\BP COG\Github\NT 
+Repositories\BP-COG_Aim2_Dementia-master_200714\BP-COG_Aim2_Dementia-master
+74         %put sysuserid    := &sysuserid;   /* User id */
+sysuserid    := ntilton
+75         
+76         /*--- Load repository assets ----*/
+77         filename fx "&SAS_work_dir/_load_repo_assets.inc";
+78         %include fx;
+
+NOTE: Function BSA saved to sasuser.ufuncs.utils.
+NOTE: Function BMI saved to sasuser.ufuncs.utils.
+NOTE: PROCEDURE FCMP used (Total process time):
+      real time           6.45 seconds
+      cpu time            0.12 seconds
+      
+
+
+NOTE: Function lb2kg saved to sasuser.functions.conversions.
+NOTE: PROCEDURE FCMP used (Total process time):
+      real time           6.39 seconds
+      cpu time            0.09 seconds
+      
+
+212        
+213        %computer_name;  /* Stores computer name in `computer_name` global macro variable */
+
+NOTE: DATA statement used (Total process time):
+      real time           0.03 seconds
+      cpu time            0.00 seconds
+      
+
+214        %put computer_name := &computer_name;
+computer_name := WSIM0284
+215        %our_sas_session_info;
+==== Macro our_sas_session_info executed ======
+sas_batchmode           := Y
+sas_fullname            := S:\Intmed_Rsrch2\GenMed\Restricted\BP COG\Github\NT 
+Repositories\BP-COG_Aim2_Dementia-master_200714\BP-COG_Aim2_Dementia-master\cox analysis 
+200302.sas
+sas_progname            := cox analysis 200302.sas
+==== Macro our_sas_session_info ended ======
+216        /***** SAS Setup ends here *****/
+217        
+218        
+219        %let BPCOG_path = S:\Intmed_Rsrch2\GenMed\Restricted\BP COG;
+220        %let BPCOG_DEMpath = &BPCOG_path.\Aim 2\Dementia Model;
+3                                         The SAS System              09:31 Tuesday, July 14, 2020
+
+221        %let OutputPath = &BPCOG_DEMpath.\Output;
+222        
+223        libname storemac "&BPCOG_DEMpath.\SAS Compiled Macros";
+NOTE: Libref STOREMAC was successfully assigned as follows: 
+      Engine:        V9 
+      Physical Name: S:\Intmed_Rsrch2\GenMed\Restricted\BP COG\Aim 2\Dementia Model\SAS Compiled 
+      Macros
+224        libname fmts "&BPCOG_path.\Aim 1\Data Management\Data\formats";
+NOTE: Libref FMTS was successfully assigned as follows: 
+      Engine:        V9 
+      Physical Name: S:\Intmed_Rsrch2\GenMed\Restricted\BP COG\Aim 1\Data Management\Data\formats
+225        libname dem "&BPCOG_DEMpath.\SAS Data";
+NOTE: Libref DEM was successfully assigned as follows: 
+      Engine:        V9 
+      Physical Name: S:\Intmed_Rsrch2\GenMed\Restricted\BP COG\Aim 2\Dementia Model\SAS Data
+226        libname sr "&BPCOG_DEMpath.\SAS Data\SAS Results";
+NOTE: Libref SR was successfully assigned as follows: 
+      Engine:        V9 
+      Physical Name: S:\Intmed_Rsrch2\GenMed\Restricted\BP COG\Aim 2\Dementia Model\SAS Data\SAS 
+      Results
+227        options fmtsearch=(fmts) nofmterr mstored sasmstore=storemac;
+228        
+229        %macro today_YYMMDD();
+230        %let z=0;
+231        %let y2=%sysfunc(today(),year2.);
+232        %let m2=%sysfunc(today(),month2.);
+233        %let d2=%sysfunc(today(),day2.);
+234        %if %eval(&m2)<=9 %then %let m2 = &z&m2;
+235        %if %eval(&d2)<=9 %then %let d2 = &z&d2;
+236        %let ymd = &y2&m2&d2;
+237        &ymd;
+238        %mend;
+239        
+240        %let ymd = %today_YYMMDD();
+241        
+242        /* produce survival function for a set of given baseline covariates */
+243        
+244        data blcovs;
+245        input age female0 educ racebpcog gcp_bl gcp_slope;
+246        format female0 yna. educ educ. racebpcog racebpcog.;
+247        datalines;
+
+NOTE: The data set WORK.BLCOVS has 1 observations and 6 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.85 seconds
+      cpu time            0.00 seconds
+      
+
+249        ;
+250        run;
+251        
+252        proc phreg data = dem.coxreg_currgcp; *outest = ESTS;
+253        ods rtf file="&OutputPath.\Cox_&ymd";
+4                                         The SAS System              09:31 Tuesday, July 14, 2020
+
+NOTE: Writing RTF Body file: S:\Intmed_Rsrch2\GenMed\Restricted\BP COG\Aim 2\Dementia 
+      Model\Output\Cox_200714
+254        class female0 (ref="Yes") racebpcog (ref="Non-Hispanic White")
+255        educ (ref="College graduate or more (Technical School Certificate, Associate Degree,
+255      ! Bachelor's Degree, Graduate or Professional School)");	   	
+256        model (t_start,t_end)*deminc(0) = gcp_bl gcp_slope age female0 educ racebpcog;
+257        baseline covariates=blcovs out=sr.bl_surfunc_&ymd survival=S lower=S_lower
+257      ! upper=S_upper;
+258        ods output parameterestimates = sr.coxparams_&ymd;
+259        run;
+
+NOTE: Since the counting process style of response was specified in the MODEL statement, the 
+      SURVIVAL= statistics in the BASELINE statement should be used with caution.
+NOTE: 143 observations were deleted due either to missing or invalid values for the time, 
+      censoring, frequency or explanatory variables or to invalid operations in generating the 
+      values for some of the explanatory variables.
+NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+NOTE: The data set SR.COXPARAMS_200714 has 9 observations and 9 variables.
+NOTE: The data set SR.BL_SURFUNC_200714 has 1337 observations and 10 variables.
+NOTE: The PROCEDURE PHREG printed pages 1-3.
+NOTE: PROCEDURE PHREG used (Total process time):
+      real time           2:46.31
+      cpu time            2:33.78
+      
+
+260        
+261        /* produce survival function for two randomly selected participants from each of ARIC,
+261      ! CHS and FOS */
+262        
+263        proc sort data=dem.coxreg_currgcp out=currgcp; by newid t_end; run;
+
+NOTE: There were 39282 observations read from the data set DEM.COXREG_CURRGCP.
+NOTE: The data set WORK.CURRGCP has 39282 observations and 29 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           3.92 seconds
+      cpu time            0.04 seconds
+      
+
+264        
+265        data currgcp;
+266        set currgcp;
+267        by newid;
+268        if first.newid;
+269        run;
+
+NOTE: There were 39282 observations read from the data set WORK.CURRGCP.
+NOTE: The data set WORK.CURRGCP has 15852 observations and 29 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.82 seconds
+      cpu time            0.01 seconds
+      
+
+270        
+5                                         The SAS System              09:31 Tuesday, July 14, 2020
+
+271          PROC SURVEYSELECT DATA=currgcp OUT=aricsamp METHOD=SRS
+272          SAMPSIZE=2 SEED=1234567;
+273          where studyname='aric';
+274          RUN;
+
+NOTE: The data set WORK.ARICSAMP has 2 observations and 29 variables.
+NOTE: The PROCEDURE SURVEYSELECT printed page 4.
+NOTE: PROCEDURE SURVEYSELECT used (Total process time):
+      real time           0.04 seconds
+      cpu time            0.03 seconds
+      
+
+275        
+276          PROC SURVEYSELECT DATA=currgcp OUT=chssamp METHOD=SRS
+277          SAMPSIZE=2 SEED=1234567;
+278          where studyname='chs';
+279          RUN;
+
+NOTE: The data set WORK.CHSSAMP has 2 observations and 29 variables.
+NOTE: The PROCEDURE SURVEYSELECT printed page 5.
+NOTE: PROCEDURE SURVEYSELECT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+280        
+281          PROC SURVEYSELECT DATA=currgcp OUT=fossamp METHOD=SRS
+282          SAMPSIZE=2 SEED=1234567;
+283          where studyname='fos';
+284          RUN;
+
+NOTE: The data set WORK.FOSSAMP has 2 observations and 29 variables.
+NOTE: The PROCEDURE SURVEYSELECT printed page 6.
+NOTE: PROCEDURE SURVEYSELECT used (Total process time):
+      real time           0.03 seconds
+      cpu time            0.01 seconds
+      
+
+285        
+286        data allsamp;
+287        set aricsamp chssamp fossamp;
+288        format female0 yna. educ educ. racebpcog racebpcog.;
+289        keep newid age female0 educ racebpcog gcp_bl gcp_slope;
+290        run;
+
+NOTE: There were 2 observations read from the data set WORK.ARICSAMP.
+NOTE: There were 2 observations read from the data set WORK.CHSSAMP.
+NOTE: There were 2 observations read from the data set WORK.FOSSAMP.
+NOTE: The data set WORK.ALLSAMP has 6 observations and 7 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.82 seconds
+      cpu time            0.00 seconds
+      
+6                                         The SAS System              09:31 Tuesday, July 14, 2020
+
+
+291        
+292        	
+292      !  proc phreg data = dem.coxreg_currgcp;
+293        	class female0 (ref="Yes") racebpcog (ref="Non-Hispanic White")
+294        	educ (ref="College graduate or more (Technical School Certificate, Associate Degree,
+294      ! Bachelor's Degree, Graduate or Professional School)");	   	
+295        	model (t_start,t_end)*deminc(0) = gcp_bl gcp_slope age female0 educ racebpcog;
+296        	baseline covariates=allsamp out=sr.bl_surfunc_testcases_&ymd survival=S lower=S_lower
+296      ! upper=S_upper cumhaz=cumhaz lowercumhaz=lower_haz uppercumhaz=upper_haz;
+297        	assess var=(gcp_bl gcp_slope age female0 educ racebpcog);
+298        	run;
+
+NOTE: Model assessment is not available with the counting process style of input. The ASSESS 
+      statement is ignored.
+NOTE: Since the counting process style of response was specified in the MODEL statement, the 
+      SURVIVAL= statistics in the BASELINE statement should be used with caution.
+NOTE: 143 observations were deleted due either to missing or invalid values for the time, 
+      censoring, frequency or explanatory variables or to invalid operations in generating the 
+      values for some of the explanatory variables.
+NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+NOTE: The data set SR.BL_SURFUNC_TESTCASES_200714 has 8022 observations and 14 variables.
+NOTE: The PROCEDURE PHREG printed pages 7-9.
+NOTE: PROCEDURE PHREG used (Total process time):
+      real time           2:45.41
+      cpu time            2:32.57
+      
+
+299        
+300        data sr.bl_testcases_1yr_&ymd;
+301        set sr.Bl_surfunc_testcases_&ymd;
+302        if t_end > 1 and t_end < 1.07;
+303        run;
+
+NOTE: There were 8022 observations read from the data set SR.BL_SURFUNC_TESTCASES_200714.
+NOTE: The data set SR.BL_TESTCASES_1YR_200714 has 6 observations and 14 variables.
+NOTE: DATA statement used (Total process time):
+      real time           3.14 seconds
+      cpu time            0.03 seconds
+      
+
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: The SAS System used:
+      real time           6:17.27
+      cpu time            5:07.20
+      
